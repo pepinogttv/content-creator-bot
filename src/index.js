@@ -4,6 +4,10 @@ const readline = require("readline");
 const path = require("path");
 const fs = require("fs");
 
+const ANSWERS = {
+  YES: 'y',
+}
+
 const {
   downloadMp3FromYoutubeUrl,
 } = require("./services/download-mp3-from-youtube-url");
@@ -38,7 +42,7 @@ rl.question("Ingresa la URL del video de YouTube: ", async (url) => {
   }
 
   rl.question("Deseas convertir el audio a texto? (y/n): ", async (answer) => {
-    if (answer === "y") {
+    if (answer === ANSWERS.YES) {
       console.log("Comenzando conversión...");
       const text = await convertAudioToText(output);
       fs.writeFileSync(
