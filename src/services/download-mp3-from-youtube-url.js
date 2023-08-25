@@ -2,15 +2,7 @@ const fs = require("fs");
 const ytdl = require("ytdl-core");
 const ffmpeg = require("fluent-ffmpeg");
 const path = require("path");
-const os = require("os");
 const { randomUUID } = require("crypto");
-
-if (os.platform() === "linux") {
-  ffmpeg.setFfmpegPath(path.resolve("bin", "ffmpeg"));
-} else {
-  const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-  ffmpeg.setFfmpegPath(ffmpegPath);
-}
 
 async function downloadMp3FromYoutubeUrl(url) {
   const filename = randomUUID();

@@ -1,13 +1,15 @@
 require("dotenv").config();
+require("./configure-ffmpeg");
 
 const readline = require("readline");
 const path = require("path");
 const fs = require("fs");
-
+const ytdl = require("ytdl-core");
 const {
-  downloadMp3FromYoutubeUrl,
-} = require("./services/download-mp3-from-youtube-url");
-const { convertAudioToText } = require("./services/whisper");
+  downloadYoutubeTranscription,
+} = require("./services/download-transcriptions");
+const { downloadYotubeVideo } = require("./services/download-video");
+const { splitVideo } = require("./services/split-video");
 
 fs.mkdirSync(path.resolve("tmp", "audios"), { recursive: true });
 fs.mkdirSync(path.resolve("tmp", "transcriptions"), { recursive: true });
@@ -17,36 +19,31 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const _25MB = 25 * 1024 * 1024;
-
-rl.question("Ingresa la URL del video de YouTube: ", async (url) => {
-  console.log("Comenzando descarga...");
-  const { output, filename } = await downloadMp3FromYoutubeUrl(url);
-  const file = fs.readFileSync(output);
-
-  console.log(
-    "[Descarga finalizada]",
-    output.split(path.sep).slice(-3).join("/")
-  );
-
-  if (file.byteLength > _25MB) {
-    console.log(
-      "El archivo es demasiado grande para ser procesado por OpenAI, lo siento :("
-    );
-    rl.close();
-    return;
-  }
-
-  rl.question("Deseas convertir el audio a texto? (y/n): ", async (answer) => {
-    if (answer === "y") {
-      console.log("Comenzando conversión...");
-      const text = await convertAudioToText(output);
-      fs.writeFileSync(
-        path.resolve("tmp", "transcriptions", `${filename}.txt`),
-        text
-      );
-      console.log("[Conversión finalizada]", text);
-    }
-    rl.close();
+function getYoutubeUrl() {
+  return new Promise((resolve) => {
+    rl.question("Ingresa la URL del video de YouTube: ", async (url) => {
+      if (!ytdl.validateURL(url)) {
+        console.log("URL invalida");
+        getYoutubeUrl().then(resolve);
+      } else {
+        resolve(url);
+      }
+    });
   });
-});
+}
+
+main();
+async function main() {
+  const youtubeUrl = await getYoutubeUrl();
+  const { videoPath, folderName } = await downloadYotubeVideo(youtubeUrl);
+  splitVideo({
+    inputFile: videoPath,
+    folderName,
+    onFinish: async (result) => {
+      console.log(result);
+    },
+    onSplit: async (result) => {
+      console.log(result);
+    },
+  });
+}
