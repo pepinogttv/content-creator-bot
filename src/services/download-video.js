@@ -9,21 +9,43 @@ const {
 } = require("../utils/ytdl.utils");
 const { randomUUID } = require("crypto");
 
-async function downloadYotubeVideo(url, format = "mkv") {
+async function downloadYotubeVideo(url, format = "mkv", startTime, endTime) {
   const { searchParams } = validateURL(url);
 
   const folderName = searchParams.get("ab_channel") || randomUUID();
   const getTmpPath = createTmpPathGetter(folderName);
   const video_id = searchParams.get("v");
 
+  let optionsAudio, optionsVideo;
+
+  if ( startTime != null && endTime != null ) {
+    optionsAudio = {
+      quality: "highestaudio",
+      range: { start: startTime, end: endTime }
+    };
+    optionsVideo = {
+      quality: "highestvideo",
+      range: { start: startTime, end: endTime }
+    };
+  } else {
+    optionsAudio = {
+      quality: "highestaudio",
+    };
+    optionsVideo = {
+      quality: "highestvideo",
+    };
+  }
+
   const audioTmpPath = getTmpPath(video_id, "mp3");
-  const audio = ytdl(url, { quality: "highestaudio" });
-  audio.pipe(fs.createWriteStream(audioTmpPath));
-
+  const audio = ytdl(url, optionsAudio);
+  
   const videoTmpPath = getTmpPath(video_id, "mp4");
-  const video = ytdl(url, { quality: "highestvideo" });
-  video.pipe(fs.createWriteStream(videoTmpPath));
+  const video = ytdl(url, optionsVideo);
 
+
+  audio.pipe(fs.createWriteStream(audioTmpPath));
+  video.pipe(fs.createWriteStream(videoTmpPath));
+  
   await Promise.all([waitWritingStream(audio), waitWritingStream(video)]);
 
   if (!fs.existsSync(audioTmpPath) || !fs.existsSync(videoTmpPath)) {
