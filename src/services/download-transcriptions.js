@@ -3,12 +3,16 @@ const fs = require("fs");
 const { validateURL } = require("../utils/ytdl.utils");
 const axios = require("axios");
 const { xml2js } = require("xml-js");
+const CacheManager = require("../utils/cache-manager");
+const cacheManager = new CacheManager();
 
 xml2js;
 
 async function downloadYoutubeTranscription(url) {
   const { searchParams } = validateURL(url);
   const video_id = searchParams.get("v");
+
+  if(cacheManager.search(video_id)) return cacheManager.get(video_id);
 
   const info = await ytdl.getInfo(url);
 
@@ -23,9 +27,8 @@ async function downloadYoutubeTranscription(url) {
 
   const { transcript } = xml2js(data, opts);
 
-  console.log(transcript.text[0]);
-  console.log(transcript.text[1]);
-  console.log(transcript.text[2]);
+  cacheManager.save(video_id, transcript);
+  return cacheManager.get(video_id);
 }
 
 module.exports = {
