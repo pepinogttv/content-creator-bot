@@ -1,3 +1,7 @@
 node_modules
 tmp
+.env.*
 .env
+!.env.example
+.vscode
+cache/*.cbcc
